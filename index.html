@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%230d6efd'><path d='M3 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H3z'/><path d='M5 4a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1 5 4zM5 6a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1 5 6zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z'/></svg>">
+</head>
+<body>
+    <!-- Animated Background Bubbles -->
+    <div class="bubbles">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+
+    <div class="diary-container">
+        <!-- Authentication Screen -->
+        <div id="auth-screen" class="auth-container">
+            <div class="auth-logo text-center mb-4">
+                <i class="bi bi-journal-text"></i>
+                <h2 class="mt-2">Diary App</h2>
+            </div>
+            <ul class="nav nav-pills mb-4 justify-content-center" id="auth-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="login-tab" data-bs-toggle="pill" data-bs-target="#login" type="button">Login</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="register-tab" data-bs-toggle="pill" data-bs-target="#register" type="button">Register</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="forgot-tab" data-bs-toggle="pill" data-bs-target="#forgot" type="button">Forgot Password</button>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="login" role="tabpanel">
+                    <div id="login-error" class="alert alert-danger d-none"></div>
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="login-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="login-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="login-password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="toggle-password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" id="login-submit-btn">
+                            <span id="login-btn-text">Login</span>
+                            <span id="login-spinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+                <div class="tab-pane fade" id="register" role="tabpanel">
+                    <div id="register-error" class="alert alert-danger d-none"></div>
+                    <form id="register-form">
+                        <div class="mb-3">
+                            <label for="register-name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="register-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="register-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="register-password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="toggle-password-register">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" id="register-submit-btn">
+                            <span id="register-btn-text">Register</span>
+                            <span id="register-spinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+                <div class="tab-pane fade" id="forgot" role="tabpanel">
+                    <div id="forgot-error" class="alert alert-danger d-none"></div>
+                    <div id="forgot-success" class="alert alert-success d-none"></div>
+                    <form id="forgot-form">
+                        <div class="mb-3">
+                            <label for="forgot-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="forgot-email" required>
+                            <div class="form-text">Enter your email address and we'll send you a link to reset your password.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" id="forgot-submit-btn">
+                            <span id="forgot-btn-text">Send Reset Link</span>
+                            <span id="forgot-spinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Diary App -->
+        <div id="diary-app" class="d-none">
+            <div class="app-header">
+                <div class="app-logo">
+                    <i class="bi bi-journal-text"></i>
+                    <h1 id="diary-title">My Diary</h1>
+                </div>
+                <div class="user-actions">
+                    <div class="dropdown">
+                        <button class="btn btn-light rounded-circle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><span class="dropdown-item-text" id="dropdown-user-name"></span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item" id="edit-profile-btn">Edit Profile</button></li>
+                            <li><button class="dropdown-item text-danger" id="logout-btn">Logout</button></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <button id="prev-year" class="btn btn-sm btn-outline-secondary me-1">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </button>
+                        <button id="prev-month" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                    </div>
+                    <div class="calendar-title">
+                        <h3 id="current-month"></h3>
+                        <span id="current-year" class="ms-2"></span>
+                    </div>
+                    <div class="calendar-nav">
+                        <button id="next-month" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                        <button id="next-year" class="btn btn-sm btn-outline-secondary ms-1">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar days will be generated here -->
+                </div>
+            </div>
+
+            <div class="diary-entry-container">
+                <h3 id="entry-date">Select a date to write your diary</h3>
+                
+                <!-- Edit Mode -->
+                <div id="edit-mode">
+                    <textarea id="diary-content" class="form-control entry-content" placeholder="Write your thoughts here..." rows="14"></textarea>
+                    <div class="entry-actions">
+                        <button id="save-entry" class="btn btn-primary" disabled>Save Entry</button>
+                        <button id="cancel-edit" class="btn btn-secondary d-none">Cancel</button>
+                    </div>
+                </div>
+                
+                <!-- View Mode -->
+                <div id="view-mode" class="d-none">
+                    <div id="diary-display" class="diary-display"></div>
+                    <div class="entry-actions">
+                        <button id="edit-entry" class="btn btn-primary">Edit Entry</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="edit-profile-error" class="alert alert-danger d-none"></div>
+                    <form id="edit-profile-form">
+                        <div class="mb-3">
+                            <label for="edit-name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="edit-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit-email" disabled>
+                            <div class="form-text">Email cannot be changed.</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-profile-btn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container">
+        <div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Diary App</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="notification-message"></div>
+            <div class="toast-progress">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="script.js"></script>
+</body>
+</html>
