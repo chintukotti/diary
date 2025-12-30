@@ -1,13 +1,5 @@
 // Firebase configuration - replace with your own config
-const firebaseConfig = {
-  apiKey: "AIzaSyCG5U4KwsSSd6cHWeGdtdlGWhKigI52NeE",
-  authDomain: "dairy-53768.firebaseapp.com",
-  projectId: "dairy-53768",
-  storageBucket: "dairy-53768.firebasestorage.app",
-  messagingSenderId: "804105105601",
-  appId: "1:804105105601:web:9e6bd2ff8319cd9e946440",
-  measurementId: "G-2Q565GTW7C"
-};
+ -- Your Firebase Configuration of Google
 // Initialize Firebase with error handling
 try {
     firebase.initializeApp(firebaseConfig);
