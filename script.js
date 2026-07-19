@@ -1,11 +1,11 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyCG5U4KwsSSd6cHWeGdtdlGWhKigI52NeE",
-  authDomain: "dairy-53768.firebaseapp.com",
-  projectId: "dairy-53768",
-  storageBucket: "dairy-53768.firebasestorage.app",
-  messagingSenderId: "804105105601",
-  appId: "1:804105105601:web:9e6bd2ff8319cd9e946440",
-  measurementId: "G-2Q565GTW7C"
+  apiKey: "AIzaSyADJ8X2y88Bw6ERym5TF0_YhpSPBREaZcE",
+  authDomain: "diary-copy.firebaseapp.com",
+  projectId: "diary-copy",
+  storageBucket: "diary-copy.firebasestorage.app",
+  messagingSenderId: "728214905373",
+  appId: "1:728214905373:web:a29328daeae2239c105cf4",
+  measurementId: "G-P2XRE17M7D"
 };
 
 const CLOUDINARY_CONFIG_PRIMARY = { cloudName: 'dc2p1idib', uploadPreset: 'diary_unsigned_preset' };
@@ -109,9 +109,21 @@ function showDiaryApp(user) {
 }
 async function checkUserVerification(user) {
     try {
-        if (user.emailVerified) { showDiaryApp(user); loadDiaryEntries(user.uid); loadDiaryPhotos(user.uid); }
-        else { await auth.signOut(); setAlert(loginError, "Please verify your email before logging in."); showAuthScreen(); }
-    } catch (e) { await auth.signOut(); setAlert(loginError, "Authentication error."); showAuthScreen(); }
+        if (user.emailVerified) { 
+            showDiaryApp(user); 
+            await loadDiaryEntries(user.uid); // Wait for entries to load
+            await loadDiaryPhotos(user.uid); 
+            checkMemoryLaneAndEmail(); // Trigger the AI Memory Lane check!
+        } else { 
+            await auth.signOut(); 
+            setAlert(loginError, "Please verify your email before logging in."); 
+            showAuthScreen(); 
+        }
+    } catch (e) { 
+        await auth.signOut(); 
+        setAlert(loginError, "Authentication error."); 
+        showAuthScreen(); 
+    }
 }
 const hideSwipeHintAfterDelay = () => {
     if (!localStorage.getItem('swipeHintShown')) setTimeout(() => { swipeHint.classList.add('hidden'); localStorage.setItem('swipeHintShown', 'true'); }, 5000);
@@ -452,3 +464,160 @@ function showNotification(msg, type = 'success') {
     new bootstrap.Toast(notification, { delay: 2000 }).show();
 }
 console.log("Diary app initialized with auto-save draft");
+
+
+
+
+
+
+
+// ==================== AI MEMORY LANE (GEMINI + EMAILJS) ====================
+// Initialize EmailJS
+(function() {
+    emailjs.init({ publicKey: "_HnmgWpPNr65nEYAM" });
+    console.log("✅ EmailJS Initialized");
+})();
+
+
+
+
+
+
+async function summarizeTenglishDiary(text) {
+    const apiKey = "--------------------------------"; // IMPORTANT: Please revoke the exposed key and use a new one!
+    
+// ❌ Old deprecated URL
+// const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+
+// ✅ New active URL
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`;
+    const prompt = `You are an AI assistant. Read the following diary entry written in a mix of Telugu and English (Tenglish). Summarize what the person did that day in 3-4 short, clear English sentences. Only output the summary. Diary entry: "${text}"`;
+
+    let waitTime = 2000; // Start with a 2-second delay
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            console.log(`🤖 Sending text to Gemini AI (Attempt ${attempt}/3)...`);
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-goog-api-key': apiKey 
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            // Check if the server returned a 503 or 500 before trying to parse JSON
+            if (res.status === 503 || res.status === 500) {
+                console.warn(`⏳ Google is busy (${res.status}). Waiting ${waitTime/1000}s before retrying...`);
+                await new Promise(r => setTimeout(r, waitTime));
+                waitTime *= 2; // Double the wait time for the next attempt
+                continue; 
+            }
+
+            const data = await res.json();
+            
+            if (res.ok && data.candidates && data.candidates.length > 0) {
+                const summary = data.candidates[0].content.parts[0].text.trim();
+                console.log("✅ AI Summary received:", summary);
+                return summary; // Success! Return the text
+            } else if (data.error && data.error.message.includes("high demand")) {
+                console.warn(`⏳ High demand detected. Waiting ${waitTime/1000}s before retrying...`);
+                await new Promise(r => setTimeout(r, waitTime));
+                waitTime *= 2; 
+            } else {
+                console.error("❌ Gemini response error:", data.error?.message || data);
+                return null; // A different, non-recoverable error occurred
+            }
+        } catch (e) {
+            console.error(`❌ Fetch Error on attempt ${attempt}:`, e);
+            // If it's a network error, wait and try again
+            await new Promise(r => setTimeout(r, waitTime));
+            waitTime *= 2;
+        }
+    }
+    console.error("❌ AI failed to respond after 3 attempts.");
+    return null; 
+}
+
+
+
+
+
+// Main function to check dates, get AI summary, and send email
+async function checkMemoryLaneAndEmail() {
+    console.log("📅 Checking for Memory Lane entries...");
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const today = new Date();
+    const month = today.getMonth() + 1; 
+    const day = today.getDate(); 
+    const currentYear = today.getFullYear();
+
+    const emailSentKey = `memEmailSent_${user.uid}_${currentYear}-${month}-${day}`;
+    if (localStorage.getItem(emailSentKey)) {
+        console.log("⏸️ Email already sent today, skipping.");
+        return; 
+    }
+
+    let memoriesFound = [];
+
+    for (const [dateStr, entry] of Object.entries(diaryEntries)) {
+        const entryDate = new Date(dateStr + 'T00:00:00');
+        if (entryDate.getMonth() + 1 === month && entryDate.getDate() === day && entryDate.getFullYear() < currentYear) {
+            memoriesFound.push({
+                yearsAgo: currentYear - entryDate.getFullYear(),
+                date: dateStr,
+                text: entry.content
+            });
+        }
+    }
+
+    if (memoriesFound.length > 0) {
+        const memory = memoriesFound[0]; 
+        console.log(`🎉 Found memory from ${memory.yearsAgo} year(s) ago! Date: ${memory.date}`);
+        
+        const formattedDate = new Date(memory.date + 'T00:00:00').toLocaleDateString('en-US', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        showNotification("🤖 AI is summarizing your past memory...", 'success');
+
+        // 1. Get the AI summary
+        const aiSummary = await summarizeTenglishDiary(memory.text);
+
+        // 2. CHECK IF AI FAILED: If null, stop here. Do not send email.
+        if (aiSummary === null) {
+            console.log("⏸️ AI summary failed. Email NOT sent. Will try again later.");
+            showNotification("⏸️ AI is busy right now. Memory email skipped.", 'warning');
+            return; // Exit the function immediately
+        }
+
+        // 3. AI succeeded, proceed to send email
+        const templateParams = {
+            to_email: user.email, 
+            entry_date: formattedDate,
+            years_ago: memory.yearsAgo,
+            ai_summary: aiSummary
+        };
+
+        try {
+            console.log("📧 Attempting to send email via EmailJS with params:", templateParams);
+            const response = await emailjs.send('service_izwp447', 'template_z3py3p5', templateParams);
+            console.log("✅ EmailJS Send Success! Response:", response);
+            console.log("📬 Memory Lane Email sent successfully to " + user.email);
+            
+            // Mark as sent ONLY if the email actually went through
+            localStorage.setItem(emailSentKey, 'true');
+            
+            showNotification(`📧 Memory Lane Email sent for an entry from ${memory.yearsAgo} year(s) ago!`, 'success');
+        } catch (error) {
+            console.error("❌ Failed to send Memory Lane email via EmailJS:", error);
+        }
+    } else {
+        console.log("🤷 No past memories found for today's date.");
+    }
+}
