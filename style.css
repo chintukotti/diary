@@ -175,7 +175,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .search-result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .search-result-date { font-weight: 600; color: var(--primary-color); font-size: 0.95rem; }
 .search-result-time { font-size: 0.8rem; color: var(--text-muted); }
-.search-result-content { font-size: 0.9rem; color: var(--text-color); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.search-result-content { font-size: 0.9rem; color: var(--text-color); line-height: 1.5; display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .search-result-content .highlight { background-color: var(--warning-color); padding: 0 2px; border-radius: 2px; font-weight: 600; color: var(--dark-color); }
 .search-result-meta { display: flex; gap: 15px; margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); }
 .search-result-meta span { display: flex; align-items: center; gap: 5px; }
