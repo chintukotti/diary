@@ -189,8 +189,8 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .photo-gallery-header h5 i { color: var(--primary-color); }
 #photo-gallery-section, #photo-gallery-view-section { margin-top: 20px; margin-bottom: 15px; padding: 15px; background-color: var(--light-color); border-radius: 8px; border: 1px solid var(--border-color); transition: background-color 0.3s ease; }
 .photo-gallery-container { position: relative; overflow: hidden; border-radius: 8px; background-color: #000; }
-.photo-gallery { display: flex; transition: transform 0.5s ease-in-out; width: 100%; }
-.photo-item { min-width: 100%; height: 300px; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+.photo-gallery { display: flex; transition: transform 0.5s ease-in-out; width: 100%; will-change: transform; transform: translateZ(0); }
+.photo-item { min-width: 100%; height: 300px; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; contain: layout style; }
 .photo-item img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer; transition: transform 0.3s ease; }
 .photo-item img:hover { transform: scale(1.02); }
 
