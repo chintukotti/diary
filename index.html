@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diary</title>
-    <!-- Instant Theme Application to prevent flash -->
     <script>
         document.documentElement.setAttribute('data-theme', localStorage.getItem('diaryTheme') || 'light');
     </script>
@@ -14,12 +13,10 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%230d6efd'><path d='M3 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H3z'/><path d='M5 4a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1 5 4zM5 6a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1 5 6zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z'/></svg>">
 </head>
 <body>
-    <!-- Initial Loader (Prevents login screen flash on reload) -->
     <div id="initial-loader" style="position: fixed; inset: 0; background: var(--bg-color); display: flex; align-items: center; justify-content: center; z-index: 9999;">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
     </div>
 
-    <!-- Animated Background Bubbles -->
     <div class="bubbles">
         <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
         <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
@@ -185,7 +182,7 @@
                 </div>
             </div>
 
-            <!-- Calendar Container -->
+            <!-- Calendar -->
             <div class="calendar-wrapper">
                 <div class="calendar-container" id="calendar-container">
                     <div class="calendar-header">
@@ -219,7 +216,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="diary-entry-container">
                 <h3 id="entry-date">Select a date to write your diary</h3>
                 <div id="draft-restore-banner" class="draft-restore-banner d-none">
@@ -236,7 +233,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Edit Mode -->
                 <div id="edit-mode">
                     <textarea id="diary-content" class="form-control entry-content" placeholder="Write your thoughts here..." rows="14"></textarea>
@@ -246,7 +243,8 @@
                             <span id="draft-status-text">Draft saved</span>
                         </div>
                     </div>
-                    
+
+                    <!-- Edit Mode Gallery -->
                     <div id="photo-gallery-section" class="d-none">
                         <div class="photo-gallery-header">
                             <h5><i class="bi bi-images"></i> Photos</h5>
@@ -255,14 +253,17 @@
                             </button>
                         </div>
                         <div id="photo-gallery-container" class="photo-gallery-container d-none">
-                            <div id="photo-gallery" class="photo-gallery"></div>
-                            <button id="gallery-prev" class="gallery-nav gallery-prev d-none">
-                                <i class="bi bi-chevron-left"></i>
-                            </button>
-                            <button id="gallery-next" class="gallery-nav gallery-next d-none">
-                                <i class="bi bi-chevron-right"></i>
-                            </button>
-                            <div id="gallery-dots" class="gallery-dots"></div>
+                            <div class="gallery-slides-area">
+                                <div id="photo-gallery" class="photo-gallery"></div>
+                                <button id="gallery-prev" class="gallery-nav gallery-prev d-none">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <button id="gallery-next" class="gallery-nav gallery-next d-none">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                                <div id="gallery-dots" class="gallery-dots"></div>
+                            </div>
+                            <div id="gallery-thumbnail-strip" class="thumbnail-strip-wrapper"></div>
                         </div>
                         <div id="no-photos" class="no-photos">
                             <i class="bi bi-camera"></i>
@@ -275,31 +276,37 @@
                             <small class="upload-status">Uploading...</small>
                         </div>
                     </div>
-                    
+
                     <div class="entry-actions">
                         <button id="save-entry" class="btn btn-primary" disabled>Save Entry</button>
                         <button id="cancel-edit" class="btn btn-secondary d-none">Cancel</button>
                     </div>
                 </div>
-               
+
                 <!-- View Mode -->
                 <div id="view-mode" class="d-none">
                     <div id="diary-display" class="diary-display"></div>
+
+                    <!-- View Mode Gallery -->
                     <div id="photo-gallery-view-section" class="d-none">
                         <div class="photo-gallery-header view-only">
                             <h5><i class="bi bi-images"></i> Photos</h5>
                         </div>
                         <div id="photo-gallery-view-container" class="photo-gallery-container">
-                            <div id="photo-gallery-view" class="photo-gallery"></div>
-                            <button id="gallery-view-prev" class="gallery-nav gallery-prev d-none">
-                                <i class="bi bi-chevron-left"></i>
-                            </button>
-                            <button id="gallery-view-next" class="gallery-nav gallery-next d-none">
-                                <i class="bi bi-chevron-right"></i>
-                            </button>
-                            <div id="gallery-view-dots" class="gallery-dots"></div>
+                            <div class="gallery-slides-area">
+                                <div id="photo-gallery-view" class="photo-gallery"></div>
+                                <button id="gallery-view-prev" class="gallery-nav gallery-prev d-none">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <button id="gallery-view-next" class="gallery-nav gallery-next d-none">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                                <div id="gallery-view-dots" class="gallery-dots"></div>
+                            </div>
+                            <div id="view-thumbnail-strip" class="thumbnail-strip-wrapper"></div>
                         </div>
                     </div>
+
                     <div class="entry-actions">
                         <button id="edit-entry" class="btn btn-primary">Edit Entry</button>
                     </div>
@@ -373,18 +380,12 @@
         </div>
     </div>
 
-    <!-- Hidden file input for photo upload -->
     <input type="file" id="photo-input" accept="image/*" multiple style="display: none;">
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-   
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-   
-    <!-- Custom JS -->
     <script src="script.js"></script>
 </body>
 </html>

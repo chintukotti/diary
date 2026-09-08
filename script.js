@@ -15,29 +15,59 @@ const getCloudinaryConfig = () => auth.currentUser?.email === 'chinturoom01@gmai
 try { firebase.initializeApp(firebaseConfig); } catch (e) { console.error(e); }
 const auth = firebase.auth(), db = firebase.firestore(), $ = id => document.getElementById(id);
 
-// DOM Elements
-const authScreen = $('auth-screen'), diaryApp = $('diary-app'), loginForm = $('login-form'), registerForm = $('register-form'), forgotForm = $('forgot-form'), loginError = $('login-error'), registerError = $('register-error'), forgotError = $('forgot-error'), forgotSuccess = $('forgot-success'), logoutBtn = $('logout-btn'), diaryTitle = $('diary-title'), dropdownUserName = $('dropdown-user-name'), prevYearBtn = $('prev-year'), prevMonthBtn = $('prev-month'), nextMonthBtn = $('next-month'), nextYearBtn = $('next-year'), currentMonthEl = $('current-month'), currentYearEl = $('current-year'), calendarGrid = $('calendar-grid'), calendarContainer = $('calendar-container'), entryDateEl = $('entry-date'), diaryContent = $('diary-content'), saveEntryBtn = $('save-entry'), cancelEditBtn = $('cancel-edit'), editEntryBtn = $('edit-entry'), editMode = $('edit-mode'), viewMode = $('view-mode'), diaryDisplay = $('diary-display'), notification = $('notification'), notificationMessage = $('notification-message'), togglePasswordBtn = $('toggle-password'), togglePasswordRegisterBtn = $('toggle-password-register'), loginPasswordInput = $('login-password'), registerPasswordInput = $('register-password'), editProfileBtn = $('edit-profile-btn'), editProfileModal = new bootstrap.Modal($('editProfileModal')), editNameInput = $('edit-name'), editEmailInput = $('edit-email'), saveProfileBtn = $('save-profile-btn'), editProfileError = $('edit-profile-error'), loginBtnText = $('login-btn-text'), loginSpinner = $('login-spinner'), registerBtnText = $('register-btn-text'), registerSpinner = $('register-spinner'), forgotBtnText = $('forgot-btn-text'), forgotSpinner = $('forgot-spinner'), swipeHint = $('swipe-hint'), photoGallerySection = $('photo-gallery-section'), addPhotosBtn = $('add-photos-btn'), photoInput = $('photo-input'), noPhotos = $('no-photos'), uploadProgress = $('upload-progress'), photoGalleryViewSection = $('photo-gallery-view-section'), lightboxImage = $('lightbox-image'), deletePhotoBtn = $('delete-photo-btn'), lightboxPrev = $('lightbox-prev'), lightboxNext = $('lightbox-next'), searchToggleBtn = $('search-toggle-btn'), searchPanel = $('search-panel'), closeSearchBtn = $('close-search-btn'), searchInput = $('search-input'), searchBtn = $('search-btn'), searchFromDate = $('search-from-date'), searchToDate = $('search-to-date'), clearFiltersBtn = $('clear-filters-btn'), searchStats = $('search-stats'), resultsCount = $('results-count'), searchResults = $('search-results'), themeToggleBtn = $('theme-toggle-btn'), themeToggleAuth = $('theme-toggle-auth'), themeIcon = $('theme-icon'), draftStatusEl = $('draft-status'), draftStatusText = $('draft-status-text'), draftIcon = $('draft-icon'), draftRestoreBanner = $('draft-restore-banner'), draftTimeEl = $('draft-time'), restoreDraftBtn = $('restore-draft-btn'), discardDraftBtn = $('discard-draft-btn');
+// ==================== IMAGE OPTIMIZATION ====================
+const getOptimizedUrl = (url, options = {}) => {
+    if (!url || typeof url !== 'string') return url;
+    if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+    const { width, height, quality = 'auto', format = 'auto', crop = 'limit' } = options;
+    const parts = [];
+    if (width) parts.push(`w_${width}`);
+    if (height) parts.push(`h_${height}`);
+    if (width || height) parts.push(`c_${crop}`);
+    parts.push(`q_${quality}`);
+    parts.push(`f_${format}`);
+    return url.replace('/upload/', `/upload/${parts.join(',')}/`);
+};
+const GALLERY_IMG_WIDTH = 800;
+const THUMBNAIL_SIZE = 80;
+const LIGHTBOX_WIDTH = 1600;
 
-// Get gallery elements dynamically
-let photoGallery = $('photo-gallery');
-let photoGalleryContainer = $('photo-gallery-container');
-let galleryPrev = $('gallery-prev');
-let galleryNext = $('gallery-next');
-let galleryDots = $('gallery-dots');
-let photoGalleryView = $('photo-gallery-view');
-let photoGalleryViewContainer = $('photo-gallery-view-container');
-let galleryViewPrev = $('gallery-view-prev');
-let galleryViewNext = $('gallery-view-next');
-let galleryViewDots = $('gallery-view-dots');
+// ==================== DOM ELEMENTS ====================
+const authScreen = $('auth-screen'), diaryApp = $('diary-app'), loginForm = $('login-form'), registerForm = $('register-form'), forgotForm = $('forgot-form'), loginError = $('login-error'), registerError = $('register-error'), forgotError = $('forgot-error'), forgotSuccess = $('forgot-success'), logoutBtn = $('logout-btn'), diaryTitle = $('diary-title'), dropdownUserName = $('dropdown-user-name'), prevYearBtn = $('prev-year'), prevMonthBtn = $('prev-month'), nextMonthBtn = $('next-month'), nextYearBtn = $('next-year'), currentMonthEl = $('current-month'), currentYearEl = $('current-year'), calendarGrid = $('calendar-grid'), calendarContainer = $('calendar-container'), entryDateEl = $('entry-date'), diaryContent = $('diary-content'), saveEntryBtn = $('save-entry'), cancelEditBtn = $('cancel-edit'), editEntryBtn = $('edit-entry'), editMode = $('edit-mode'), viewMode = $('view-mode'), diaryDisplay = $('diary-display'), notification = $('notification'), notificationMessage = $('notification-message'), togglePasswordBtn = $('toggle-password'), togglePasswordRegisterBtn = $('toggle-password-register'), loginPasswordInput = $('login-password'), registerPasswordInput = $('register-password'), editProfileBtn = $('edit-profile-btn'), editProfileModal = new bootstrap.Modal($('editProfileModal')), editNameInput = $('edit-name'), editEmailInput = $('edit-email'), saveProfileBtn = $('save-profile-btn'), editProfileError = $('edit-profile-error'), loginBtnText = $('login-btn-text'), loginSpinner = $('login-spinner'), registerBtnText = $('register-btn-text'), registerSpinner = $('register-spinner'), forgotBtnText = $('forgot-btn-text'), forgotSpinner = $('forgot-spinner'), swipeHint = $('swipe-hint'), photoGallerySection = $('photo-gallery-section'), addPhotosBtn = $('add-photos-btn'), photoInput = $('photo-input'), photoGallery = $('photo-gallery'), photoGalleryContainer = $('photo-gallery-container'), noPhotos = $('no-photos'), uploadProgress = $('upload-progress'), galleryPrev = $('gallery-prev'), galleryNext = $('gallery-next'), galleryDots = $('gallery-dots'), photoGalleryViewSection = $('photo-gallery-view-section'), photoGalleryView = $('photo-gallery-view'), photoGalleryViewContainer = $('photo-gallery-view-container'), galleryViewPrev = $('gallery-view-prev'), galleryViewNext = $('gallery-view-next'), galleryViewDots = $('gallery-view-dots'), photoLightboxModalEl = $('photoLightbox'), photoLightbox = new bootstrap.Modal(photoLightboxModalEl), lightboxImage = $('lightbox-image'), deletePhotoBtn = $('delete-photo-btn'), lightboxPrev = $('lightbox-prev'), lightboxNext = $('lightbox-next'), searchToggleBtn = $('search-toggle-btn'), searchPanel = $('search-panel'), closeSearchBtn = $('close-search-btn'), searchInput = $('search-input'), searchBtn = $('search-btn'), searchFromDate = $('search-from-date'), searchToDate = $('search-to-date'), clearFiltersBtn = $('clear-filters-btn'), searchStats = $('search-stats'), resultsCount = $('results-count'), searchResults = $('search-results'), themeToggleBtn = $('theme-toggle-btn'), themeToggleAuth = $('theme-toggle-auth'), themeIcon = $('theme-icon'), draftStatusEl = $('draft-status'), draftStatusText = $('draft-status-text'), draftIcon = $('draft-icon'), draftRestoreBanner = $('draft-restore-banner'), draftTimeEl = $('draft-time'), restoreDraftBtn = $('restore-draft-btn'), discardDraftBtn = $('discard-draft-btn');
 
-// Initialize photoLightbox modal with proper event handling
-const photoLightboxElement = $('photoLightbox');
-const photoLightbox = new bootstrap.Modal(photoLightboxElement);
-
-// State Variables
-let currentDate = new Date(), selectedDate = null, diaryEntries = {}, diaryPhotos = {}, today = new Date(), isEditing = false, isNewEntry = false, currentPhotoIndex = 0, currentPhotos = [], autoScrollInterval = null, lightboxPhotoIndex = 0, isInEditMode = false, calendarTouchStartX = 0, calendarTouchStartY = 0, calendarTouchMoved = false, calendarSwipeDetected = false, draftAutoSaveTimeout = null;
+// ==================== STATE ====================
+let currentDate = new Date(), selectedDate = null, diaryEntries = {}, diaryPhotos = {}, today = new Date();
+let isEditing = false, isNewEntry = false, currentPhotoIndex = 0, currentPhotos = [];
+let autoScrollInterval = null, lightboxPhotoIndex = 0, isInEditMode = false;
+let calendarTouchStartX = 0, calendarTouchStartY = 0, calendarTouchMoved = false, calendarSwipeDetected = false;
+let draftAutoSaveTimeout = null;
 today.setHours(0, 0, 0, 0);
 const DRAFT_SAVE_DELAY = 3000;
+
+// ==================== INFINITE CAROUSEL STATE ====================
+// DOM index includes clones: [Clone-Last]=0, [Real-0]=1 ... [Real-N-1]=N, [Clone-First]=N+1
+let domIndex = 1;
+let domIndexView = 1;
+let isTransitioning = false;
+let isTransitioningView = false;
+
+// ==================== SCROLL PERFORMANCE ====================
+let scrollTimer = null, isPageScrolling = false;
+window.addEventListener('scroll', () => {
+    if (!isPageScrolling) {
+        isPageScrolling = true;
+        document.body.classList.add('is-scrolling');
+        stopAutoScroll();
+    }
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+        isPageScrolling = false;
+        document.body.classList.remove('is-scrolling');
+        if (currentPhotos.length > 1 && !photoLightboxModalEl.classList.contains('show')) {
+            startAutoScroll(isInEditMode ? 'edit' : 'view');
+        }
+    }, 150);
+}, { passive: true });
 
 // ==================== THEME ====================
 const initTheme = () => setTheme(localStorage.getItem('diaryTheme') || 'light');
@@ -53,29 +83,6 @@ const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-t
 themeToggleBtn.addEventListener('click', toggleTheme);
 themeToggleAuth.addEventListener('click', toggleTheme);
 initTheme();
-
-// ==================== UTILITY FUNCTIONS ====================
-function optimizeImageUrl(url, width, height = null) {
-    if (!url) return url;
-    const transformation = height 
-        ? `w_${width},h_${height},c_fill,q_auto,f_auto,fl_progressive/`
-        : `w_${width},q_auto,f_auto,fl_progressive/`;
-    return url.replace('/upload/', `/upload/${transformation}`);
-}
-
-function stopAutoScroll() {
-    if (autoScrollInterval) {
-        clearInterval(autoScrollInterval);
-        autoScrollInterval = null;
-    }
-}
-
-function startAutoScroll(mode) {
-    stopAutoScroll();
-    if (currentPhotos.length > 1) {
-        autoScrollInterval = setInterval(() => nextPhoto(mode), 4000);
-    }
-}
 
 // ==================== DRAFTS ====================
 const getDraftKey = date => auth.currentUser ? `diary_draft_${auth.currentUser.uid}_${date}` : null;
@@ -100,7 +107,9 @@ const getAllDraftDates = () => {
     return d;
 };
 function updateDraftStatus(status) {
-    draftStatusText.textContent = status === 'saved' ? `Draft auto-saved at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}` : 'Saving draft...';
+    draftStatusText.textContent = status === 'saved'
+        ? `Draft auto-saved at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}`
+        : 'Saving draft...';
     draftIcon.className = status === 'saved' ? 'bi bi-cloud-check' : 'bi bi-cloud-arrow-up';
     draftStatusEl.classList.remove('d-none', status === 'saved' ? 'draft-saving' : 'draft-saved');
     draftStatusEl.classList.add(status === 'saved' ? 'draft-saved' : 'draft-saving');
@@ -121,22 +130,16 @@ diaryContent.addEventListener('input', () => {
 });
 window.addEventListener('beforeunload', () => { if (selectedDate && isInEditMode && diaryContent.value.trim()) { clearTimeout(draftAutoSaveTimeout); saveDraft(); } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && selectedDate && isInEditMode && diaryContent.value.trim()) { clearTimeout(draftAutoSaveTimeout); saveDraft(); } });
-
-restoreDraftBtn.addEventListener('click', () => {
-    const d = loadDraft(selectedDate);
-    if (d) { diaryContent.value = d.content; hideDraftBanner(); showNotification('Draft restored!', 'success'); updateDraftStatus('saved'); }
-});
+restoreDraftBtn.addEventListener('click', () => { const d = loadDraft(selectedDate); if (d) { diaryContent.value = d.content; hideDraftBanner(); showNotification('Draft restored!', 'success'); updateDraftStatus('saved'); } });
 discardDraftBtn.addEventListener('click', () => { clearDraft(selectedDate); hideDraftBanner(); if (isNewEntry) diaryContent.value = ''; renderCalendar(); showNotification('Draft discarded', 'warning'); });
 
 // ==================== AUTH ====================
 auth.onAuthStateChanged(user => {
     const loader = $('initial-loader');
     if (loader) loader.style.display = 'none';
-    
     if (user) checkUserVerification(user);
     else showAuthScreen();
 });
-
 function showAuthScreen() { authScreen.classList.remove('d-none'); diaryApp.classList.add('d-none'); $('login-tab').click(); }
 function showDiaryApp(user) {
     authScreen.classList.add('d-none'); diaryApp.classList.remove('d-none');
@@ -155,11 +158,9 @@ const hideSwipeHintAfterDelay = () => {
     if (!localStorage.getItem('swipeHintShown')) setTimeout(() => { swipeHint.classList.add('hidden'); localStorage.setItem('swipeHintShown', 'true'); }, 5000);
     else swipeHint.classList.add('hidden');
 };
-
 const setupToggle = (btn, input) => btn.addEventListener('click', () => { const t = input.getAttribute('type') === 'password' ? 'text' : 'password'; input.setAttribute('type', t); btn.querySelector('i').classList.toggle('bi-eye'); btn.querySelector('i').classList.toggle('bi-eye-slash'); });
 setupToggle(togglePasswordBtn, loginPasswordInput);
 setupToggle(togglePasswordRegisterBtn, registerPasswordInput);
-
 const setAlert = (el, msg, type = 'danger') => { if (!el) return; if (msg) { el.textContent = msg; el.className = `alert alert-${type}`; } else el.classList.add('d-none'); };
 const authErrors = { 'auth/user-not-found': "No account found with this email.", 'auth/wrong-password': "Incorrect password.", 'auth/invalid-email': "Invalid email address.", 'auth/user-disabled': "This account has been disabled.", 'auth/too-many-requests': "Too many attempts. Please try again later.", 'auth/email-already-in-use': "An account with this email already exists.", 'auth/weak-password': "Password is too weak." };
 const getAuthErrorMessage = error => authErrors[error.code] || error.message;
@@ -227,7 +228,10 @@ saveProfileBtn.addEventListener('click', async () => {
 });
 
 // ==================== CALENDAR ====================
-prevMonthBtn.addEventListener('click', () => navigateMonth(-1)); nextMonthBtn.addEventListener('click', () => navigateMonth(1)); prevYearBtn.addEventListener('click', () => navigateYear(-1)); nextYearBtn.addEventListener('click', () => navigateYear(1));
+prevMonthBtn.addEventListener('click', () => navigateMonth(-1));
+nextMonthBtn.addEventListener('click', () => navigateMonth(1));
+prevYearBtn.addEventListener('click', () => navigateYear(-1));
+nextYearBtn.addEventListener('click', () => navigateYear(1));
 function navigateMonth(d) { const a = d > 0 ? 'slide-left' : 'slide-right'; calendarGrid.classList.add(a); setTimeout(() => { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); calendarGrid.classList.remove(a); }, 150); }
 function navigateYear(d) { const a = d > 0 ? 'slide-left' : 'slide-right'; calendarGrid.classList.add(a); setTimeout(() => { currentDate.setFullYear(currentDate.getFullYear() + d); renderCalendar(); calendarGrid.classList.remove(a); }, 150); }
 
@@ -240,7 +244,8 @@ calendarContainer.addEventListener('touchend', e => {
 
 function renderCalendar() {
     const year = currentDate.getFullYear(), month = currentDate.getMonth();
-    currentMonthEl.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long' }); currentYearEl.textContent = year;
+    currentMonthEl.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long' });
+    currentYearEl.textContent = year;
     calendarGrid.innerHTML = '<div style="display:contents">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => `<div style="font-weight:bold;text-align:center;font-size:0.75rem;color:var(--text-muted)">${d}</div>`).join('') + '</div>';
     const draftDates = getAllDraftDates(), firstDay = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month + 1, 0).getDate();
     for (let i = 0; i < firstDay; i++) calendarGrid.appendChild(document.createElement('div'));
@@ -261,19 +266,12 @@ function renderCalendar() {
 }
 
 function selectDate(year, month, day) {
-    // CRITICAL: Stop auto-scroll immediately
-    stopAutoScroll();
-    
-    if (selectedDate && isInEditMode && diaryContent.value.trim()) { 
-        clearTimeout(draftAutoSaveTimeout); 
-        saveDraft(); 
-    }
-    
+    if (selectedDate && isInEditMode && diaryContent.value.trim()) { clearTimeout(draftAutoSaveTimeout); saveDraft(); }
     selectedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dateObj = new Date(year, month, day); dateObj.setHours(0, 0, 0, 0);
     if (dateObj > today) return showNotification('You cannot add entries for future dates', 'warning');
     entryDateEl.textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    isEditing = false; searchPanel.classList.add('d-none'); hideDraftStatus(); hideDraftBanner();
+    isEditing = false; stopAutoScroll(); searchPanel.classList.add('d-none'); hideDraftStatus(); hideDraftBanner();
     currentPhotos = diaryPhotos[selectedDate] || []; currentPhotoIndex = 0;
 
     if (diaryEntries[selectedDate]) {
@@ -298,7 +296,8 @@ searchBtn.addEventListener('click', performSearch);
 searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') performSearch(); });
 let searchTimeout;
 searchInput.addEventListener('input', () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { if (searchInput.value.trim().length >= 2) performSearch(); else if (searchInput.value.trim().length === 0) resetSearchResults(); }, 300); });
-searchFromDate.addEventListener('change', performSearch); searchToDate.addEventListener('change', performSearch);
+searchFromDate.addEventListener('change', performSearch);
+searchToDate.addEventListener('change', performSearch);
 clearFiltersBtn.addEventListener('click', () => { searchInput.value = ''; searchFromDate.value = ''; searchToDate.value = ''; resetSearchResults(); });
 
 function performSearch() {
@@ -308,11 +307,13 @@ function performSearch() {
     setTimeout(() => {
         const results = [];
         for (const [date, entry] of Object.entries(diaryEntries)) {
-            if (fromDate && date < fromDate) continue; if (toDate && date > toDate) continue;
+            if (fromDate && date < fromDate) continue;
+            if (toDate && date > toDate) continue;
             if (query.length === 0 || entry.content.toLowerCase().includes(query))
                 results.push({ date, content: entry.content, savedTime: entry.savedTime, updatedTime: entry.updatedTime, photoCount: diaryPhotos[date]?.length || 0, query });
         }
-        results.sort((a, b) => b.date.localeCompare(a.date)); displaySearchResults(results, query);
+        results.sort((a, b) => b.date.localeCompare(a.date));
+        displaySearchResults(results, query);
     }, 200);
 }
 
@@ -337,314 +338,306 @@ function displaySearchResults(results, query) {
 const highlightText = (text, query) => !query ? text : text.replace(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<span class="highlight">$1</span>');
 const resetSearchResults = () => { searchStats.classList.add('d-none'); searchResults.innerHTML = '<div class="no-search-results"><i class="bi bi-journal-text"></i><p>Enter a keyword to search your diary entries</p></div>'; };
 
-// ==================== GALLERY & LIGHTBOX (OPTIMIZED) ====================
-function cleanupGallery(mode) {
-    stopAutoScroll();
-    
-    const container = mode === 'edit' ? photoGallery : photoGalleryView;
-    const wrapper = mode === 'edit' ? photoGalleryContainer : photoGalleryViewContainer;
-    const dots = mode === 'edit' ? galleryDots : galleryViewDots;
-    
-    // Clear all content
-    container.innerHTML = '';
-    dots.innerHTML = '';
-    
-    // Remove thumbnail strip
-    const existingStrip = wrapper.querySelector('.thumbnail-strip');
-    if (existingStrip) existingStrip.remove();
-    
-    // Remove photo count
-    const existingCount = wrapper.querySelector('.photo-count');
-    if (existingCount) existingCount.remove();
-}
+// ==================== GALLERY & LIGHTBOX ====================
+/*
+ * INFINITE CAROUSEL LOGIC
+ *
+ * Real photos: [A, B, C]
+ * DOM built as: [Clone-C][A][B][C][Clone-A]
+ * DOM indices:      0     1  2  3     4
+ *
+ * Start at domIndex=1 (real A).
+ *
+ * NEXT from C (domIndex=3):
+ *   → animate to Clone-A (domIndex=4)  — slides RIGHT ✓
+ *   → on transitionend: instantly jump to real A (domIndex=1)
+ *   → seamless loop ✓
+ *
+ * PREV from A (domIndex=1):
+ *   → animate to Clone-C (domIndex=0)  — slides LEFT ✓
+ *   → on transitionend: instantly jump to real C (domIndex=3)
+ *   → seamless loop ✓
+ */
 
 function renderGallery(mode) {
-    cleanupGallery(mode);
-    
-    const isEdit = mode === 'edit';
-    const container = isEdit ? photoGallery : photoGalleryView;
-    const dots = isEdit ? galleryDots : galleryViewDots;
-    const wrapper = isEdit ? photoGalleryContainer : photoGalleryViewContainer;
-    const prev = isEdit ? galleryPrev : galleryViewPrev;
-    const next = isEdit ? galleryNext : galleryViewNext;
-    
-    if (currentPhotos.length === 0) { 
-        if (isEdit) { 
-            noPhotos.classList.remove('d-none'); 
-            wrapper.classList.add('d-none'); 
-        } else {
-            photoGalleryViewSection.classList.add('d-none'); 
-        }
-        return; 
+    const isEdit    = mode === 'edit';
+    const strip     = isEdit ? photoGallery          : photoGalleryView;
+    const dots      = isEdit ? galleryDots           : galleryViewDots;
+    const wrapper   = isEdit ? photoGalleryContainer : photoGalleryViewContainer;
+    const prev      = isEdit ? galleryPrev           : galleryViewPrev;
+    const next      = isEdit ? galleryNext           : galleryViewNext;
+
+    // Reset
+    strip.innerHTML = '';
+    dots.innerHTML  = '';
+    strip.classList.remove('animating');
+    strip.style.transform = '';
+
+    if (isEdit) { domIndex = 1; isTransitioning = false; }
+    else        { domIndexView = 1; isTransitioningView = false; }
+
+    if (currentPhotos.length === 0) {
+        if (isEdit) { noPhotos.classList.remove('d-none'); wrapper.classList.add('d-none'); }
+        else { photoGalleryViewSection.classList.add('d-none'); }
+        _renderThumbStrip(mode);
+        return;
     }
-    
-    if (isEdit) { 
-        noPhotos.classList.add('d-none'); 
-        wrapper.classList.remove('d-none'); 
-    } else {
-        photoGalleryViewSection.classList.remove('d-none'); 
-    }
-    
-    const isMobile = window.innerWidth <= 768;
-    const mobilePhotoWidth = Math.min(720, Math.round(window.innerWidth * window.devicePixelRatio || 720));
-    const mainWidth = isMobile ? mobilePhotoWidth : 800;
-    
-    currentPhotos.forEach((photo, index) => {
-        const div = document.createElement('div'); 
+
+    if (isEdit) { noPhotos.classList.add('d-none'); wrapper.classList.remove('d-none'); }
+    else { photoGalleryViewSection.classList.remove('d-none'); }
+
+    const total = currentPhotos.length;
+
+    // Helper: build one slide element
+    const buildSlide = (photo, realIndex, isClone) => {
+        const div = document.createElement('div');
         div.className = 'photo-item';
+        if (isClone) div.setAttribute('aria-hidden', 'true');
         const img = document.createElement('img');
-        
-        // OPTIMIZED: Cloudinary transformations + hints set BEFORE src
-        // so the browser honors them when fetching.
-        img.loading = index === 0 ? 'eager' : 'lazy'; // First photo loads immediately
-        img.decoding = 'async';                        // Decode off the main thread
-        img.draggable = false;
-        img.alt = `Photo ${index + 1}`;
-        
-        // Only request the size actually displayed on this device.
-        img.src = optimizeImageUrl(photo.url, mainWidth);
-        
-        img.addEventListener('click', () => openLightbox(index));
-        div.appendChild(img); 
-        container.appendChild(div);
-        
-        const dot = document.createElement('div'); 
-        dot.className = `gallery-dot ${index === currentPhotoIndex ? 'active' : ''}`; 
+        img.src      = getOptimizedUrl(photo.url, { width: GALLERY_IMG_WIDTH });
+        img.alt      = isClone ? '' : `Photo ${realIndex + 1}`;
+        img.decoding = 'async';
+        img.loading  = 'lazy';
+        img.addEventListener('error', function () { if (this.src !== photo.url) this.src = photo.url; }, { once: true });
+        const openIdx = isClone
+            ? (photo === currentPhotos[0] ? 0 : total - 1)
+            : realIndex;
+        img.addEventListener('click', () => openLightbox(openIdx));
+        div.appendChild(img);
+        return div;
+    };
+
+    // [Clone-Last] real photos... [Clone-First]
+    strip.appendChild(buildSlide(currentPhotos[total - 1], total - 1, true));
+    currentPhotos.forEach((photo, index) => {
+        const slide = buildSlide(photo, index, false);
+        if (index === 0) slide.querySelector('img').loading = 'eager';
+        strip.appendChild(slide);
+    });
+    strip.appendChild(buildSlide(currentPhotos[0], 0, true));
+
+    // Dots
+    currentPhotos.forEach((_, index) => {
+        const dot = document.createElement('div');
+        dot.className = `gallery-dot ${index === currentPhotoIndex ? 'active' : ''}`;
         dot.addEventListener('click', () => goToPhoto(index, mode));
         dots.appendChild(dot);
     });
-    
-    if (currentPhotos.length > 1) { 
-        prev.classList.remove('d-none'); 
-        next.classList.remove('d-none'); 
-        renderThumbnailStrip(wrapper, mode); 
-        // Pre-warm the next slide so auto-scroll/swipe doesn't show a blank.
-        preloadNextImage(1);
-        startAutoScroll(mode); 
-    } else { 
-        prev.classList.add('d-none'); 
-        next.classList.add('d-none'); 
+
+    // Nav buttons
+    if (total > 1) {
+        prev.classList.remove('d-none');
+        next.classList.remove('d-none');
+        startAutoScroll(mode);
+    } else {
+        prev.classList.add('d-none');
+        next.classList.add('d-none');
     }
-    
-    updateGalleryPosition(mode);
-    
-    // Setup swipe gestures (leak-free: handlers created once and reused)
-    setupSwipeGestures(wrapper, mode);
+
+    // Set initial position without animation
+    _setPosition(strip, isEdit ? domIndex : domIndexView, false);
+
+    // Thumbnail strip
+    _renderThumbStrip(mode);
+
+    // Photo count badge
+    _updateBadge(wrapper, currentPhotoIndex, total);
 }
 
-function updatePhotoCount(container) { 
-    // OPTIMIZED: Reuse the existing counter element instead of removing and
-    // re-adding it on every auto-scroll tick (which forces layout/reflow).
-    let b = container.querySelector('.photo-count'); 
-    if (!b) { 
-        b = document.createElement('div'); 
-        b.className = 'photo-count'; 
-        container.appendChild(b); 
-    } 
-    b.textContent = `${currentPhotoIndex + 1} / ${currentPhotos.length}`; 
-}
-
-function renderThumbnailStrip(container, mode) { 
-    const ex = container.querySelector('.thumbnail-strip'); 
-    if (ex) ex.remove(); 
-    const strip = document.createElement('div'); 
-    strip.className = 'thumbnail-strip'; 
-    
-    currentPhotos.forEach((p, i) => { 
-        const t = document.createElement('img');
-        
-        // OPTIMIZED: Use smaller thumbnails + async decode off the main thread
-        const thumbnailUrl = optimizeImageUrl(p.url, 100, 100);
-        t.decoding = 'async';
-        t.loading = 'lazy';
-        t.draggable = false;
-        t.src = thumbnailUrl;
-        
-        t.className = `thumbnail ${i === currentPhotoIndex ? 'active' : ''}`; 
-        t.addEventListener('click', () => goToPhoto(i, mode)); 
-        strip.appendChild(t); 
-    }); 
-    
-    container.appendChild(strip); 
-}
-
-function updateGalleryPosition(mode) { 
-    const g = mode === 'edit' ? photoGallery : photoGalleryView;
-    const d = mode === 'edit' ? galleryDots : galleryViewDots;
-    const c = mode === 'edit' ? photoGalleryContainer : photoGalleryViewContainer;
-    
-    g.style.transform = `translateX(-${currentPhotoIndex * 100}%)`; 
-    d.querySelectorAll('.gallery-dot').forEach((dot, i) => dot.classList.toggle('active', i === currentPhotoIndex)); 
-    c.querySelectorAll('.thumbnail').forEach((thumb, i) => thumb.classList.toggle('active', i === currentPhotoIndex)); 
-    updatePhotoCount(c); 
-    // Pre-warm the next slide so swiping/auto-scroll never shows a blank.
-    preloadNextImage(1); 
-}
-
-// Fetch the image at (currentPhotoIndex + offset) into the browser cache
-// before it becomes visible, so slide transitions are instant on mobile.
-function preloadNextImage(offset = 1) {
+function _renderThumbStrip(mode) {
+    const isEdit      = mode === 'edit';
+    const thumbWrapper = document.getElementById(isEdit ? 'gallery-thumbnail-strip' : 'view-thumbnail-strip');
+    if (!thumbWrapper) return;
+    thumbWrapper.innerHTML = '';
     if (currentPhotos.length <= 1) return;
-    const nextIndex = (currentPhotoIndex + offset) % currentPhotos.length;
-    const photo = currentPhotos[nextIndex];
-    if (!photo?.url) return;
-    const isMobile = window.innerWidth <= 768;
-    const mainWidth = isMobile ? 720 : 800;
-    const url = optimizeImageUrl(photo.url, mainWidth);
-    // Image() fetches in the background; browsers cache it for the <img> to reuse.
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = url;
+    currentPhotos.forEach((p, i) => {
+        const t = document.createElement('img');
+        t.src       = getOptimizedUrl(p.url, { width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE, crop: 'fill' });
+        t.className = `thumbnail ${i === currentPhotoIndex ? 'active' : ''}`;
+        t.alt       = `Thumbnail ${i + 1}`;
+        t.decoding  = 'async';
+        t.loading   = 'lazy';
+        t.addEventListener('click', () => goToPhoto(i, mode));
+        t.addEventListener('error', function () { if (this.src !== p.url) this.src = p.url; }, { once: true });
+        thumbWrapper.appendChild(t);
+    });
 }
 
-const goToPhoto = (i, m) => { 
-    currentPhotoIndex = i; 
-    updateGalleryPosition(m); 
-    if (currentPhotos.length > 1) { 
-        stopAutoScroll(); 
-        startAutoScroll(m); 
-    } 
-};
-
-const nextPhoto = m => { 
-    currentPhotoIndex = (currentPhotoIndex + 1) % currentPhotos.length; 
-    updateGalleryPosition(m); 
-};
-
-const prevPhoto = m => { 
-    currentPhotoIndex = (currentPhotoIndex - 1 + currentPhotos.length) % currentPhotos.length; 
-    updateGalleryPosition(m); 
-};
-
-// LEAK-FREE swipe handling. Handlers are created once per gallery element and
-// bound with a fresh closure, instead of being recreated on every render (the
-// old code stacked duplicate touch listeners on every renderGallery call, which
-// caused lag on mobile after opening several entries with photos).
-const swipeState = new WeakMap(); // element -> { startX, moved }
-
-function createSwipeHandler(container, mode) {
-    return {
-        handleTouchStart(e) {
-            const s = swipeState.get(container) || { startX: 0, moved: false };
-            s.startX = e.changedTouches[0].screenX;
-            s.moved = false;
-            swipeState.set(container, s);
-            stopAutoScroll();
-        },
-        handleTouchMove(e) {
-            const s = swipeState.get(container);
-            if (!s) return;
-            if (Math.abs(e.changedTouches[0].screenX - s.startX) > 20) {
-                s.moved = true;
-            }
-        },
-        handleTouchEnd(e) {
-            const s = swipeState.get(container);
-            if (!s) return;
-            if (s.moved && Math.abs(s.startX - e.changedTouches[0].screenX) > 50) {
-                if (s.startX - e.changedTouches[0].screenX > 0) {
-                    nextPhoto(mode);
-                } else {
-                    prevPhoto(mode);
-                }
-            }
-            if (currentPhotos.length > 1) {
-                startAutoScroll(mode);
-            }
-        }
-    };
+function _setPosition(strip, idx, animate) {
+    if (animate) strip.classList.add('animating');
+    else strip.classList.remove('animating');
+    strip.style.transform = `translateX(-${idx * 100}%)`;
 }
 
-// Store bound handlers so we never attach more than one set per container.
-const swipeHandlerSets = new WeakMap(); // element -> Set of {type, handler}
+function _syncUI(mode) {
+    const isEdit       = mode === 'edit';
+    const dots         = isEdit ? galleryDots           : galleryViewDots;
+    const wrapper      = isEdit ? photoGalleryContainer : photoGalleryViewContainer;
+    const thumbWrapper = document.getElementById(isEdit ? 'gallery-thumbnail-strip' : 'view-thumbnail-strip');
+    const total        = currentPhotos.length;
 
-function setupSwipeGestures(container, mode) {
-    if (!container) return;
-    
-    // First call: attach one set of handlers and remember them. Later calls are
-    // no-ops, so re-rendering the gallery can never stack duplicate listeners.
-    let set = swipeHandlerSets.get(container);
-    if (!set) {
-        const handlers = createSwipeHandler(container, mode);
-        set = [
-            { type: 'touchstart', handler: handlers.handleTouchStart },
-            { type: 'touchmove',  handler: handlers.handleTouchMove },
-            { type: 'touchend',   handler: handlers.handleTouchEnd }
-        ];
-        swipeHandlerSets.set(container, set);
-        set.forEach(({ type, handler }) => container.addEventListener(type, handler, { passive: true }));
+    // Dots
+    dots.querySelectorAll('.gallery-dot').forEach((dot, i) =>
+        dot.classList.toggle('active', i === currentPhotoIndex));
+
+    // Thumbnails
+    if (thumbWrapper) {
+        thumbWrapper.querySelectorAll('.thumbnail').forEach((th, i) =>
+            th.classList.toggle('active', i === currentPhotoIndex));
+        const active = thumbWrapper.querySelectorAll('.thumbnail')[currentPhotoIndex];
+        if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
-    // Note: each container is used for exactly one mode (edit vs view), so the
-    // mode captured on first attach is always correct for that container.
+
+    // Badge
+    _updateBadge(wrapper, currentPhotoIndex, total);
 }
 
-// Gallery button event listeners
-galleryPrev.addEventListener('click', () => { prevPhoto('edit'); stopAutoScroll(); startAutoScroll('edit'); });
-galleryNext.addEventListener('click', () => { nextPhoto('edit'); stopAutoScroll(); startAutoScroll('edit'); });
+function _updateBadge(wrapper, index, total) {
+    if (!wrapper) return;
+    const area   = wrapper.querySelector('.gallery-slides-area') || wrapper;
+    let badge    = area.querySelector('.photo-count');
+    if (!badge) { badge = document.createElement('div'); badge.className = 'photo-count'; area.appendChild(badge); }
+    badge.textContent = `${index + 1} / ${total}`;
+}
+
+// Core navigate: direction +1 (next) or -1 (prev)
+function _navigate(direction, mode) {
+    const isEdit = mode === 'edit';
+    if (isEdit  && isTransitioning)     return;
+    if (!isEdit && isTransitioningView) return;
+
+    const strip = isEdit ? photoGallery : photoGalleryView;
+    const total = currentPhotos.length;
+    if (total <= 1) return;
+
+    if (isEdit) isTransitioning = true; else isTransitioningView = true;
+
+    // Move DOM index and real index
+    let newDom = (isEdit ? domIndex : domIndexView) + direction;
+    currentPhotoIndex = (currentPhotoIndex + direction + total) % total;
+    if (isEdit) domIndex = newDom; else domIndexView = newDom;
+
+    // Animate
+    _setPosition(strip, newDom, true);
+    _syncUI(mode);
+
+    // After animation: jump if landed on clone
+    strip.addEventListener('transitionend', function onEnd() {
+        strip.removeEventListener('transitionend', onEnd);
+        let jumped = false;
+
+        if (newDom === total + 1) {
+            // Landed on clone-of-first → jump to real first
+            _setPosition(strip, 1, false);
+            if (isEdit) domIndex = 1; else domIndexView = 1;
+            jumped = true;
+        } else if (newDom === 0) {
+            // Landed on clone-of-last → jump to real last
+            _setPosition(strip, total, false);
+            if (isEdit) domIndex = total; else domIndexView = total;
+            jumped = true;
+        }
+
+        setTimeout(() => {
+            if (isEdit) isTransitioning = false; else isTransitioningView = false;
+        }, jumped ? 20 : 0);
+    });
+}
+
+// Jump to specific real index (dot/thumbnail click)
+function goToPhoto(index, mode) {
+    const isEdit = mode === 'edit';
+    if (isEdit  && isTransitioning)     return;
+    if (!isEdit && isTransitioningView) return;
+    const total = currentPhotos.length;
+    if (total <= 1) return;
+
+    currentPhotoIndex = index;
+    const targetDom   = index + 1; // real photos at DOM index 1..N
+    if (isEdit) domIndex = targetDom; else domIndexView = targetDom;
+
+    _setPosition(isEdit ? photoGallery : photoGalleryView, targetDom, true);
+    _syncUI(mode);
+    stopAutoScroll();
+    if (total > 1) startAutoScroll(mode);
+}
+
+const nextPhoto = mode => _navigate(+1, mode);
+const prevPhoto = mode => _navigate(-1, mode);
+
+const startAutoScroll = m => {
+    if (autoScrollInterval) clearInterval(autoScrollInterval);
+    if (isPageScrolling) return;
+    autoScrollInterval = setInterval(() => { if (!isPageScrolling) nextPhoto(m); }, 4000);
+};
+const stopAutoScroll = () => { if (autoScrollInterval) { clearInterval(autoScrollInterval); autoScrollInterval = null; } };
+
+// Button listeners
+galleryPrev.addEventListener('click',     () => { prevPhoto('edit'); stopAutoScroll(); startAutoScroll('edit'); });
+galleryNext.addEventListener('click',     () => { nextPhoto('edit'); stopAutoScroll(); startAutoScroll('edit'); });
 galleryViewPrev.addEventListener('click', () => { prevPhoto('view'); stopAutoScroll(); startAutoScroll('view'); });
 galleryViewNext.addEventListener('click', () => { nextPhoto('view'); stopAutoScroll(); startAutoScroll('view'); });
 
-// Mouse hover events for auto-scroll
+// Hover pause
 photoGalleryContainer.addEventListener('mouseenter', stopAutoScroll);
-photoGalleryContainer.addEventListener('mouseleave', () => { 
-    if (currentPhotos.length > 1 && isInEditMode) startAutoScroll('edit'); 
-});
-
+photoGalleryContainer.addEventListener('mouseleave', () => { if (currentPhotos.length > 1 && isInEditMode && !isPageScrolling) startAutoScroll('edit'); });
 photoGalleryViewContainer.addEventListener('mouseenter', stopAutoScroll);
-photoGalleryViewContainer.addEventListener('mouseleave', () => { 
-    if (currentPhotos.length > 1 && !isInEditMode) startAutoScroll('view'); 
-});
+photoGalleryViewContainer.addEventListener('mouseleave', () => { if (currentPhotos.length > 1 && !isInEditMode && !isPageScrolling) startAutoScroll('view'); });
 
-// ==================== LIGHTBOX (OPTIMIZED WITH ACCESSIBILITY FIX) ====================
-const openLightbox = i => { 
-    lightboxPhotoIndex = i; 
-    updateLightboxImage(); 
-    deletePhotoBtn.classList.toggle('d-none', !isInEditMode); 
-    photoLightbox.show(); 
+// Touch swipe
+const addSwipe = (c, m) => {
+    let x = 0, mv = false;
+    c.addEventListener('touchstart', e => { x = e.changedTouches[0].screenX; mv = false; stopAutoScroll(); }, { passive: true });
+    c.addEventListener('touchmove',  e => { if (Math.abs(e.changedTouches[0].screenX - x) > 20) mv = true; }, { passive: true });
+    c.addEventListener('touchend',   e => {
+        if (mv && Math.abs(x - e.changedTouches[0].screenX) > 50)
+            (x - e.changedTouches[0].screenX > 0) ? nextPhoto(m) : prevPhoto(m);
+        if (currentPhotos.length > 1) startAutoScroll(m);
+    }, { passive: true });
+};
+addSwipe(photoGalleryContainer, 'edit');
+addSwipe(photoGalleryViewContainer, 'view');
+
+// ==================== LIGHTBOX ====================
+const openLightbox = i => {
+    lightboxPhotoIndex = i;
+    stopAutoScroll();
+    updateLightboxImage();
+    deletePhotoBtn.classList.toggle('d-none', !isInEditMode);
+    photoLightbox.show();
 };
 
-const updateLightboxImage = () => { 
-    // OPTIMIZED: Use appropriate size for mobile/desktop
-    const isMobile = window.innerWidth <= 768;
-    const optimizedUrl = optimizeImageUrl(currentPhotos[lightboxPhotoIndex].url, isMobile ? 800 : 1400);
-    lightboxImage.decoding = 'async';
-    lightboxImage.src = optimizedUrl;
-    
-    lightboxPrev.style.display = lightboxNext.style.display = currentPhotos.length > 1 ? 'flex' : 'none'; 
+const preloadLightboxImage = index => {
+    if (index < 0 || index >= currentPhotos.length) return;
+    const img = new Image();
+    img.src = getOptimizedUrl(currentPhotos[index].url, { width: LIGHTBOX_WIDTH });
 };
 
-// FIX: Handle modal hide event to remove focus (fixes aria-hidden warning)
-photoLightboxElement.addEventListener('hide.bs.modal', function() {
-    // Remove focus from any focused element inside the modal
-    const focusedElement = this.querySelector(':focus');
-    if (focusedElement) {
-        focusedElement.blur();
+const updateLightboxImage = () => {
+    const photo = currentPhotos[lightboxPhotoIndex];
+    if (!photo) return;
+    lightboxImage.src = getOptimizedUrl(photo.url, { width: LIGHTBOX_WIDTH });
+    lightboxPrev.style.display = lightboxNext.style.display = currentPhotos.length > 1 ? 'flex' : 'none';
+    if (currentPhotos.length > 1) {
+        preloadLightboxImage((lightboxPhotoIndex + 1) % currentPhotos.length);
+        preloadLightboxImage((lightboxPhotoIndex - 1 + currentPhotos.length) % currentPhotos.length);
     }
+};
+
+photoLightboxModalEl.addEventListener('shown.bs.modal', () => document.body.classList.add('lightbox-open'));
+photoLightboxModalEl.addEventListener('hidden.bs.modal', () => {
+    document.body.classList.remove('lightbox-open');
+    lightboxImage.src = '';
+    if (currentPhotos.length > 1 && !isPageScrolling)
+        startAutoScroll(isInEditMode ? 'edit' : 'view');
 });
 
-lightboxPrev.addEventListener('click', () => { 
-    lightboxPhotoIndex = (lightboxPhotoIndex - 1 + currentPhotos.length) % currentPhotos.length; 
-    updateLightboxImage(); 
-});
-
-lightboxNext.addEventListener('click', () => { 
-    lightboxPhotoIndex = (lightboxPhotoIndex + 1) % currentPhotos.length; 
-    updateLightboxImage(); 
-});
-
-document.addEventListener('keydown', e => { 
-    if (!photoLightboxElement.classList.contains('show')) return; 
-    if (e.key === 'ArrowLeft') { 
-        lightboxPhotoIndex = (lightboxPhotoIndex - 1 + currentPhotos.length) % currentPhotos.length; 
-        updateLightboxImage(); 
-    } else if (e.key === 'ArrowRight') { 
-        lightboxPhotoIndex = (lightboxPhotoIndex + 1) % currentPhotos.length; 
-        updateLightboxImage(); 
-    } else if (e.key === 'Escape') {
-        // Blur focused elements before closing
-        const focusedElement = photoLightboxElement.querySelector(':focus');
-        if (focusedElement) focusedElement.blur();
-    }
+lightboxPrev.addEventListener('click', () => { lightboxPhotoIndex = (lightboxPhotoIndex - 1 + currentPhotos.length) % currentPhotos.length; updateLightboxImage(); });
+lightboxNext.addEventListener('click', () => { lightboxPhotoIndex = (lightboxPhotoIndex + 1) % currentPhotos.length; updateLightboxImage(); });
+document.addEventListener('keydown', e => {
+    if (!photoLightboxModalEl.classList.contains('show')) return;
+    if (e.key === 'ArrowLeft')  { lightboxPhotoIndex = (lightboxPhotoIndex - 1 + currentPhotos.length) % currentPhotos.length; updateLightboxImage(); }
+    if (e.key === 'ArrowRight') { lightboxPhotoIndex = (lightboxPhotoIndex + 1) % currentPhotos.length; updateLightboxImage(); }
 });
 
 deletePhotoBtn.addEventListener('click', async () => {
@@ -652,282 +645,149 @@ deletePhotoBtn.addEventListener('click', async () => {
     const p = currentPhotos[lightboxPhotoIndex], cfg = getCloudinaryConfig();
     try {
         deletePhotoBtn.disabled = true; deletePhotoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        if (p.deleteToken) { 
-            try { 
-                const fd = new FormData(); 
-                fd.append('token', p.deleteToken); 
-                await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloudName}/delete_by_token`, { method: 'POST', body: fd }); 
-            } catch (e) {} 
-        }
+        if (p.deleteToken) { try { const fd = new FormData(); fd.append('token', p.deleteToken); await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloudName}/delete_by_token`, { method: 'POST', body: fd }); } catch (e) {} }
         await db.collection('diaryPhotos').doc(`${auth.currentUser.uid}_${selectedDate}`).update({ photos: firebase.firestore.FieldValue.arrayRemove(p) });
-        currentPhotos.splice(lightboxPhotoIndex, 1); 
-        diaryPhotos[selectedDate] = currentPhotos; 
+        currentPhotos.splice(lightboxPhotoIndex, 1);
+        diaryPhotos[selectedDate] = currentPhotos;
         photoLightbox.hide();
-        
-        if (currentPhotos.length > 0) { 
-            currentPhotoIndex = Math.min(currentPhotoIndex, currentPhotos.length - 1); 
-            renderGallery('edit'); 
-        } else { 
-            noPhotos.classList.remove('d-none'); 
-            photoGalleryContainer.classList.add('d-none'); 
+        if (currentPhotos.length > 0) {
+            currentPhotoIndex = Math.min(lightboxPhotoIndex, currentPhotos.length - 1);
+            renderGallery(isInEditMode ? 'edit' : 'view');
+        } else {
+            noPhotos.classList.remove('d-none');
+            photoGalleryContainer.classList.add('d-none');
         }
-        renderCalendar(); 
-        showNotification('Photo deleted!');
-    } catch (e) { 
-        showNotification('Failed to delete', 'danger'); 
-    } finally { 
-        deletePhotoBtn.disabled = false; 
-        deletePhotoBtn.innerHTML = '<i class="bi bi-trash"></i> Delete'; 
-    }
+        renderCalendar(); showNotification('Photo deleted!');
+    } catch (e) { showNotification('Failed to delete', 'danger'); }
+    finally { deletePhotoBtn.disabled = false; deletePhotoBtn.innerHTML = '<i class="bi bi-trash"></i> Delete'; }
 });
 
 // ==================== UPLOADS ====================
 addPhotosBtn.addEventListener('click', () => photoInput.click());
 photoInput.addEventListener('change', async e => {
-    const files = Array.from(e.target.files); 
-    if (!files.length || !selectedDate) return;
+    const files = Array.from(e.target.files); if (!files.length || !selectedDate) return;
     if (files.some(f => !['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(f.type))) return showNotification('Only image files allowed', 'warning');
     if (files.some(f => f.size > 10 * 1024 * 1024)) return showNotification('Max 10MB per image', 'warning');
-    await uploadPhotos(files); 
-    photoInput.value = '';
+    await uploadPhotos(files); photoInput.value = '';
 });
 
 async function uploadPhotos(files) {
     uploadProgress.classList.remove('d-none');
     const pBar = uploadProgress.querySelector('.progress-bar'), stat = uploadProgress.querySelector('.upload-status');
     const uploaded = [], total = files.length;
-    
     for (let i = 0; i < total; i++) {
         const f = files[i], start = Date.now(), sizeMB = (f.size / 1048576).toFixed(2);
         stat.innerHTML = `Uploading ${i + 1}/${total}: <strong>${f.name}</strong> (${sizeMB} MB)<div class="upload-stats"><span id="t"><i class="bi bi-clock"></i> 0.0s</span><span id="p"><i class="bi bi-cloud-upload"></i> 0 MB / ${sizeMB} MB</span><span id="s"><i class="bi bi-speedometer2"></i> 0 KB/s</span></div>`;
         pBar.style.width = `${(i / total) * 100}%`;
-        
         const t = setInterval(() => {
             const el = (Date.now() - start) / 1000, est = Math.min((el / (el + 2)) * f.size, f.size), estMB = (est / 1048576).toFixed(2), sp = el > 0 ? (est / 1024 / el).toFixed(1) : 0;
-            $('t').innerHTML = `<i class="bi bi-clock"></i> ${el.toFixed(1)}s`; 
-            $('p').innerHTML = `<i class="bi bi-cloud-upload"></i> ${estMB} MB / ${sizeMB} MB`; 
+            $('t').innerHTML = `<i class="bi bi-clock"></i> ${el.toFixed(1)}s`;
+            $('p').innerHTML = `<i class="bi bi-cloud-upload"></i> ${estMB} MB / ${sizeMB} MB`;
             $('s').innerHTML = `<i class="bi bi-speedometer2"></i> ${sp} KB/s`;
         }, 100);
-        
         try {
-            const d = await uploadToCloudinary(f); 
-            clearInterval(t);
+            const d = await uploadToCloudinary(f); clearInterval(t);
             const el = ((Date.now() - start) / 1000).toFixed(1), sp = ((f.size / 1024) / el).toFixed(1);
             stat.innerHTML = `✓ Uploaded ${i + 1}/${total}: <strong>${f.name}</strong><div class="upload-stats"><span><i class="bi bi-check-circle-fill text-success"></i> ${sizeMB} MB in ${el}s</span><span><i class="bi bi-speedometer2"></i> Avg: ${sp} KB/s</span></div>`;
-            pBar.style.width = `${((i + 1) / total) * 100}%`; 
-            uploaded.push(d); 
-            await savePhotoToFirestore(d);
-            
+            pBar.style.width = `${((i + 1) / total) * 100}%`;
+            uploaded.push(d); await savePhotoToFirestore(d);
             if (!diaryPhotos[selectedDate]) diaryPhotos[selectedDate] = [];
-            diaryPhotos[selectedDate].push(d); 
-            currentPhotos = diaryPhotos[selectedDate];
-            
-            renderGallery('edit'); 
-            renderCalendar(); 
-            await new Promise(r => setTimeout(r, 800));
+            diaryPhotos[selectedDate].push(d); currentPhotos = diaryPhotos[selectedDate];
+            renderGallery('edit'); renderCalendar(); await new Promise(r => setTimeout(r, 800));
         } catch (e) {
-            clearInterval(t); 
+            clearInterval(t);
             stat.innerHTML = `✗ Failed: <strong>${f.name}</strong><div class="upload-stats"><span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> ${e.message}</span></div>`;
             await new Promise(r => setTimeout(r, 1500));
         }
     }
-    
     if (uploaded.length > 0) {
         const tot = (files.reduce((s, f) => s + f.size, 0) / 1048576).toFixed(2);
         stat.innerHTML = `<strong>✓ All done!</strong> ${uploaded.length}/${total} photo(s) uploaded<div class="upload-stats"><span><i class="bi bi-cloud-check-fill text-success"></i> Total: ${tot} MB</span></div>`;
-        pBar.style.width = '100%'; 
-        await new Promise(r => setTimeout(r, 1500)); 
-        showNotification(`${uploaded.length} photo(s) uploaded!`);
-    } else { 
-        stat.innerHTML = `<strong>✗ Upload failed</strong> - No photos were uploaded`; 
-        await new Promise(r => setTimeout(r, 2000)); 
-    }
-    
-    uploadProgress.classList.add('d-none'); 
-    pBar.style.width = '0%';
+        pBar.style.width = '100%'; await new Promise(r => setTimeout(r, 1500)); showNotification(`${uploaded.length} photo(s) uploaded!`);
+    } else { stat.innerHTML = `<strong>✗ Upload failed</strong> - No photos were uploaded`; await new Promise(r => setTimeout(r, 2000)); }
+    uploadProgress.classList.add('d-none'); pBar.style.width = '0%';
 }
 
 async function uploadToCloudinary(file) {
-    const cfg = getCloudinaryConfig(); 
-    const fd = new FormData();
-    fd.append('file', file); 
-    fd.append('upload_preset', cfg.uploadPreset); 
-    fd.append('folder', `diary_images/${auth.currentUser.uid}`);
-    
+    const cfg = getCloudinaryConfig(); const fd = new FormData();
+    fd.append('file', file); fd.append('upload_preset', cfg.uploadPreset); fd.append('folder', `diary_images/${auth.currentUser.uid}`);
     const res = await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloudName}/image/upload`, { method: 'POST', body: fd });
     if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error?.message || 'Upload failed');
     const d = await res.json();
-    
-    return { 
-        url: d.secure_url || null, 
-        publicId: d.public_id || null, 
-        deleteToken: d.delete_token || null, 
-        width: d.width || null, 
-        height: d.height || null, 
-        uploadedAt: new Date().toISOString() 
-    };
+    return { url: d.secure_url || null, publicId: d.public_id || null, deleteToken: d.delete_token || null, width: d.width || null, height: d.height || null, uploadedAt: new Date().toISOString() };
 }
 
 async function savePhotoToFirestore(photo) {
     if (!selectedDate || !auth.currentUser) return;
     const ref = db.collection('diaryPhotos').doc(`${auth.currentUser.uid}_${selectedDate}`);
-    
-    if ((await ref.get()).exists) {
-        await ref.update({ 
-            photos: firebase.firestore.FieldValue.arrayUnion(photo), 
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
-        });
-    } else {
-        await ref.set({ 
-            userId: auth.currentUser.uid, 
-            date: selectedDate, 
-            photos: [photo], 
-            createdAt: firebase.firestore.FieldValue.serverTimestamp() 
-        });
-    }
+    if ((await ref.get()).exists) await ref.update({ photos: firebase.firestore.FieldValue.arrayUnion(photo), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    else await ref.set({ userId: auth.currentUser.uid, date: selectedDate, photos: [photo], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
 }
 
-const loadDiaryPhotos = async uid => { 
-    try { 
-        const s = await db.collection('diaryPhotos').where('userId', '==', uid).get(); 
-        diaryPhotos = {}; 
-        s.forEach(d => diaryPhotos[d.data().date] = d.data().photos || []); 
-        renderCalendar(); 
-    } catch (e) {} 
+const loadDiaryPhotos = async uid => {
+    try {
+        const s = await db.collection('diaryPhotos').where('userId', '==', uid).get();
+        diaryPhotos = {};
+        s.forEach(d => diaryPhotos[d.data().date] = d.data().photos || []);
+        renderCalendar();
+    } catch (e) {}
 };
 
 // ==================== ENTRIES ====================
 saveEntryBtn.addEventListener('click', async () => {
     if (!selectedDate || !auth.currentUser) return;
-    const content = diaryContent.value.trim(); 
-    if (!content) return showNotification('Please write something', 'warning');
-    
+    const content = diaryContent.value.trim(); if (!content) return showNotification('Please write something', 'warning');
     try {
-        saveEntryBtn.disabled = true; 
-        saveEntryBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+        saveEntryBtn.disabled = true; saveEntryBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
         const ref = db.collection('diaryEntries').doc(`${auth.currentUser.uid}_${selectedDate}`);
         const tStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-        
-        if (isEditing) { 
-            await ref.update({ 
-                content, 
-                updatedTime: tStr, 
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
-            }); 
-            diaryEntries[selectedDate].content = content; 
-            diaryEntries[selectedDate].updatedTime = tStr; 
-        } else { 
-            await ref.set({ 
-                userId: auth.currentUser.uid, 
-                date: selectedDate, 
-                content, 
-                savedTime: tStr, 
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(), 
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
-            }); 
-            diaryEntries[selectedDate] = { content, savedTime: tStr }; 
+        if (isEditing) {
+            await ref.update({ content, updatedTime: tStr, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            diaryEntries[selectedDate].content = content; diaryEntries[selectedDate].updatedTime = tStr;
+        } else {
+            await ref.set({ userId: auth.currentUser.uid, date: selectedDate, content, savedTime: tStr, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            diaryEntries[selectedDate] = { content, savedTime: tStr };
         }
-        
-        clearDraft(selectedDate); 
-        renderCalendar();
-        
+        clearDraft(selectedDate); renderCalendar();
         const entry = diaryEntries[selectedDate];
-        if (!entry) return;
         const tDisp = entry.updatedTime && entry.savedTime !== entry.updatedTime ? `Saved at: ${entry.savedTime} | Updated at: ${entry.updatedTime}` : `Saved at: ${entry.savedTime}`;
         diaryDisplay.innerHTML = `<div class="entry-content-wrapper">${content}</div><div class="entry-time">${tDisp}</div>`;
-        
-        editMode.classList.add('d-none'); 
-        viewMode.classList.remove('d-none'); 
-        photoGallerySection.classList.add('d-none'); 
-        isInEditMode = false;
-        
-        // Stop auto-scroll when switching to view mode
-        stopAutoScroll();
-        
-        if (currentPhotos.length > 0) { 
-            photoGalleryViewSection.classList.remove('d-none'); 
-            renderGallery('view'); 
-        } else {
-            photoGalleryViewSection.classList.add('d-none'); 
-        }
-        
+        editMode.classList.add('d-none'); viewMode.classList.remove('d-none'); photoGallerySection.classList.add('d-none'); isInEditMode = false;
+        if (currentPhotos.length > 0) { photoGalleryViewSection.classList.remove('d-none'); renderGallery('view'); } else photoGalleryViewSection.classList.add('d-none');
         showNotification('Entry saved!');
-    } catch (e) { 
-        showNotification(e.message, 'danger'); 
-    } finally { 
-        saveEntryBtn.disabled = false; 
-        saveEntryBtn.innerHTML = isEditing ? 'Update Entry' : 'Save Entry'; 
-    }
+    } catch (e) { showNotification(e.message, 'danger'); }
+    finally { saveEntryBtn.disabled = false; saveEntryBtn.innerHTML = isEditing ? 'Update Entry' : 'Save Entry'; }
 });
 
 editEntryBtn.addEventListener('click', () => {
-    const ex = diaryDisplay.querySelector('.entry-content-wrapper').textContent;
-    const d = loadDraft(selectedDate);
+    const ex = diaryDisplay.querySelector('.entry-content-wrapper').textContent, d = loadDraft(selectedDate);
     diaryContent.value = ex;
-    
-    if (d && d.content.trim() !== ex.trim()) showDraftBanner(d); 
-    else hideDraftBanner();
-    
-    editMode.classList.remove('d-none'); 
-    viewMode.classList.add('d-none'); 
-    photoGallerySection.classList.remove('d-none'); 
-    isInEditMode = true; 
-    photoGalleryViewSection.classList.add('d-none');
-    
-    renderGallery('edit'); 
-    saveEntryBtn.textContent = 'Update Entry'; 
-    cancelEditBtn.classList.remove('d-none'); 
-    isEditing = true;
+    if (d && d.content.trim() !== ex.trim()) showDraftBanner(d); else hideDraftBanner();
+    editMode.classList.remove('d-none'); viewMode.classList.add('d-none'); photoGallerySection.classList.remove('d-none'); isInEditMode = true; photoGalleryViewSection.classList.add('d-none');
+    renderGallery('edit'); saveEntryBtn.textContent = 'Update Entry'; cancelEditBtn.classList.remove('d-none'); isEditing = true;
 });
 
 cancelEditBtn.addEventListener('click', () => {
-    hideDraftBanner(); 
-    hideDraftStatus(); 
-    editMode.classList.add('d-none'); 
-    viewMode.classList.remove('d-none'); 
-    photoGallerySection.classList.add('d-none'); 
-    isInEditMode = false;
-    
-    // Stop auto-scroll when canceling
-    stopAutoScroll();
-    
-    if (currentPhotos.length > 0) { 
-        photoGalleryViewSection.classList.remove('d-none'); 
-        renderGallery('view'); 
-    } else {
-        photoGalleryViewSection.classList.add('d-none'); 
-    }
-    
+    hideDraftBanner(); hideDraftStatus(); editMode.classList.add('d-none'); viewMode.classList.remove('d-none'); photoGallerySection.classList.add('d-none'); isInEditMode = false;
+    if (currentPhotos.length > 0) { photoGalleryViewSection.classList.remove('d-none'); renderGallery('view'); } else photoGalleryViewSection.classList.add('d-none');
     isEditing = false;
 });
 
-const loadDiaryEntries = async uid => { 
-    try { 
-        const s = await db.collection('diaryEntries').where('userId', '==', uid).get(); 
-        diaryEntries = {}; 
-        s.forEach(d => { 
-            const data = d.data(); 
-            diaryEntries[data.date] = { 
-                content: data.content, 
-                savedTime: data.savedTime || '', 
-                updatedTime: data.updatedTime 
-            }; 
-        }); 
-        renderCalendar(); 
-    } catch (e) { 
-        showNotification(e.message, 'danger'); 
-    } 
+const loadDiaryEntries = async uid => {
+    try {
+        const s = await db.collection('diaryEntries').where('userId', '==', uid).get();
+        diaryEntries = {};
+        s.forEach(d => { const data = d.data(); diaryEntries[data.date] = { content: data.content, savedTime: data.savedTime || '', updatedTime: data.updatedTime }; });
+        renderCalendar();
+    } catch (e) { showNotification(e.message, 'danger'); }
 };
 
 // ==================== NOTIFICATIONS ====================
 function showNotification(msg, type = 'success') {
     notificationMessage.textContent = msg;
     notification.className = `toast align-items-center text-white bg-${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'success'}`;
-    const pb = notification.querySelector('.progress-bar'); 
-    pb.style.animation = 'none'; 
-    pb.offsetHeight; 
-    pb.style.animation = null;
+    const pb = notification.querySelector('.progress-bar'); pb.style.animation = 'none'; pb.offsetHeight; pb.style.animation = null;
     new bootstrap.Toast(notification, { delay: 2000 }).show();
 }
 
-console.log("Diary app initialized - FULLY OPTIMIZED & ACCESSIBLE ✅");
+console.log("Diary app initialized");
