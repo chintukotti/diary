@@ -58,8 +58,8 @@ initTheme();
 function optimizeImageUrl(url, width, height = null) {
     if (!url) return url;
     const transformation = height 
-        ? `w_${width},h_${height},c_fill,q_auto,f_auto/`
-        : `w_${width},q_auto,f_auto/`;
+        ? `w_${width},h_${height},c_fill,q_auto,f_auto,fl_progressive/`
+        : `w_${width},q_auto,f_auto,fl_progressive/`;
     return url.replace('/upload/', `/upload/${transformation}`);
 }
 
@@ -385,19 +385,24 @@ function renderGallery(mode) {
         photoGalleryViewSection.classList.remove('d-none'); 
     }
     
-    updatePhotoCount(wrapper);
+    const isMobile = window.innerWidth <= 768;
+    const mobilePhotoWidth = Math.min(720, Math.round(window.innerWidth * window.devicePixelRatio || 720));
+    const mainWidth = isMobile ? mobilePhotoWidth : 800;
     
     currentPhotos.forEach((photo, index) => {
         const div = document.createElement('div'); 
         div.className = 'photo-item';
         const img = document.createElement('img');
         
-        // OPTIMIZED: Use Cloudinary transformations for faster loading
-        const isMobile = window.innerWidth <= 768;
-        const optimizedUrl = optimizeImageUrl(photo.url, isMobile ? 600 : 800);
-        img.src = optimizedUrl;
-        img.loading = 'lazy'; // Lazy loading
+        // OPTIMIZED: Cloudinary transformations + hints set BEFORE src
+        // so the browser honors them when fetching.
+        img.loading = index === 0 ? 'eager' : 'lazy'; // First photo loads immediately
+        img.decoding = 'async';                        // Decode off the main thread
+        img.draggable = false;
         img.alt = `Photo ${index + 1}`;
+        
+        // Only request the size actually displayed on this device.
+        img.src = optimizeImageUrl(photo.url, mainWidth);
         
         img.addEventListener('click', () => openLightbox(index));
         div.appendChild(img); 
@@ -413,6 +418,8 @@ function renderGallery(mode) {
         prev.classList.remove('d-none'); 
         next.classList.remove('d-none'); 
         renderThumbnailStrip(wrapper, mode); 
+        // Pre-warm the next slide so auto-scroll/swipe doesn't show a blank.
+        preloadNextImage(1);
         startAutoScroll(mode); 
     } else { 
         prev.classList.add('d-none'); 
@@ -421,17 +428,20 @@ function renderGallery(mode) {
     
     updateGalleryPosition(mode);
     
-    // Setup swipe gestures (cleaned up version)
+    // Setup swipe gestures (leak-free: handlers created once and reused)
     setupSwipeGestures(wrapper, mode);
 }
 
 function updatePhotoCount(container) { 
-    const ex = container.querySelector('.photo-count'); 
-    if (ex) ex.remove(); 
-    const b = document.createElement('div'); 
-    b.className = 'photo-count'; 
+    // OPTIMIZED: Reuse the existing counter element instead of removing and
+    // re-adding it on every auto-scroll tick (which forces layout/reflow).
+    let b = container.querySelector('.photo-count'); 
+    if (!b) { 
+        b = document.createElement('div'); 
+        b.className = 'photo-count'; 
+        container.appendChild(b); 
+    } 
     b.textContent = `${currentPhotoIndex + 1} / ${currentPhotos.length}`; 
-    container.appendChild(b); 
 }
 
 function renderThumbnailStrip(container, mode) { 
@@ -443,10 +453,12 @@ function renderThumbnailStrip(container, mode) {
     currentPhotos.forEach((p, i) => { 
         const t = document.createElement('img');
         
-        // OPTIMIZED: Use smaller thumbnails
+        // OPTIMIZED: Use smaller thumbnails + async decode off the main thread
         const thumbnailUrl = optimizeImageUrl(p.url, 100, 100);
-        t.src = thumbnailUrl;
+        t.decoding = 'async';
         t.loading = 'lazy';
+        t.draggable = false;
+        t.src = thumbnailUrl;
         
         t.className = `thumbnail ${i === currentPhotoIndex ? 'active' : ''}`; 
         t.addEventListener('click', () => goToPhoto(i, mode)); 
@@ -465,6 +477,24 @@ function updateGalleryPosition(mode) {
     d.querySelectorAll('.gallery-dot').forEach((dot, i) => dot.classList.toggle('active', i === currentPhotoIndex)); 
     c.querySelectorAll('.thumbnail').forEach((thumb, i) => thumb.classList.toggle('active', i === currentPhotoIndex)); 
     updatePhotoCount(c); 
+    // Pre-warm the next slide so swiping/auto-scroll never shows a blank.
+    preloadNextImage(1); 
+}
+
+// Fetch the image at (currentPhotoIndex + offset) into the browser cache
+// before it becomes visible, so slide transitions are instant on mobile.
+function preloadNextImage(offset = 1) {
+    if (currentPhotos.length <= 1) return;
+    const nextIndex = (currentPhotoIndex + offset) % currentPhotos.length;
+    const photo = currentPhotos[nextIndex];
+    if (!photo?.url) return;
+    const isMobile = window.innerWidth <= 768;
+    const mainWidth = isMobile ? 720 : 800;
+    const url = optimizeImageUrl(photo.url, mainWidth);
+    // Image() fetches in the background; browsers cache it for the <img> to reuse.
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
 }
 
 const goToPhoto = (i, m) => { 
@@ -486,43 +516,66 @@ const prevPhoto = m => {
     updateGalleryPosition(m); 
 };
 
-function setupSwipeGestures(container, mode) {
-    let startX = 0, moved = false;
-    
-    const handleTouchStart = (e) => {
-        startX = e.changedTouches[0].screenX;
-        moved = false;
-        stopAutoScroll();
-    };
-    
-    const handleTouchMove = (e) => {
-        if (Math.abs(e.changedTouches[0].screenX - startX) > 20) {
-            moved = true;
-        }
-    };
-    
-    const handleTouchEnd = (e) => {
-        if (moved && Math.abs(startX - e.changedTouches[0].screenX) > 50) {
-            if (startX - e.changedTouches[0].screenX > 0) {
-                nextPhoto(mode);
-            } else {
-                prevPhoto(mode);
+// LEAK-FREE swipe handling. Handlers are created once per gallery element and
+// bound with a fresh closure, instead of being recreated on every render (the
+// old code stacked duplicate touch listeners on every renderGallery call, which
+// caused lag on mobile after opening several entries with photos).
+const swipeState = new WeakMap(); // element -> { startX, moved }
+
+function createSwipeHandler(container, mode) {
+    return {
+        handleTouchStart(e) {
+            const s = swipeState.get(container) || { startX: 0, moved: false };
+            s.startX = e.changedTouches[0].screenX;
+            s.moved = false;
+            swipeState.set(container, s);
+            stopAutoScroll();
+        },
+        handleTouchMove(e) {
+            const s = swipeState.get(container);
+            if (!s) return;
+            if (Math.abs(e.changedTouches[0].screenX - s.startX) > 20) {
+                s.moved = true;
+            }
+        },
+        handleTouchEnd(e) {
+            const s = swipeState.get(container);
+            if (!s) return;
+            if (s.moved && Math.abs(s.startX - e.changedTouches[0].screenX) > 50) {
+                if (s.startX - e.changedTouches[0].screenX > 0) {
+                    nextPhoto(mode);
+                } else {
+                    prevPhoto(mode);
+                }
+            }
+            if (currentPhotos.length > 1) {
+                startAutoScroll(mode);
             }
         }
-        if (currentPhotos.length > 1) {
-            startAutoScroll(mode);
-        }
     };
+}
+
+// Store bound handlers so we never attach more than one set per container.
+const swipeHandlerSets = new WeakMap(); // element -> Set of {type, handler}
+
+function setupSwipeGestures(container, mode) {
+    if (!container) return;
     
-    // Remove old listeners if any
-    container.removeEventListener('touchstart', handleTouchStart);
-    container.removeEventListener('touchmove', handleTouchMove);
-    container.removeEventListener('touchend', handleTouchEnd);
-    
-    // Add fresh listeners
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: true });
-    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    // First call: attach one set of handlers and remember them. Later calls are
+    // no-ops, so re-rendering the gallery can never stack duplicate listeners.
+    let set = swipeHandlerSets.get(container);
+    if (!set) {
+        const handlers = createSwipeHandler(container, mode);
+        set = [
+            { type: 'touchstart', handler: handlers.handleTouchStart },
+            { type: 'touchmove',  handler: handlers.handleTouchMove },
+            { type: 'touchend',   handler: handlers.handleTouchEnd }
+        ];
+        swipeHandlerSets.set(container, set);
+        set.forEach(({ type, handler }) => container.addEventListener(type, handler, { passive: true }));
+    }
+    // Note: each container is used for exactly one mode (edit vs view), so the
+    // mode captured on first attach is always correct for that container.
 }
 
 // Gallery button event listeners
@@ -554,6 +607,7 @@ const updateLightboxImage = () => {
     // OPTIMIZED: Use appropriate size for mobile/desktop
     const isMobile = window.innerWidth <= 768;
     const optimizedUrl = optimizeImageUrl(currentPhotos[lightboxPhotoIndex].url, isMobile ? 800 : 1400);
+    lightboxImage.decoding = 'async';
     lightboxImage.src = optimizedUrl;
     
     lightboxPrev.style.display = lightboxNext.style.display = currentPhotos.length > 1 ? 'flex' : 'none'; 
